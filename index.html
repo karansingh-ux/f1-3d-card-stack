@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Highlights (2018 - 2025) / 3D Showcase</title>
+  
+  <!-- Image Preloading for Zero-Jitter Rendering -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="preload" as="image" href="media/poster_01.jpg" />
+  <link rel="preload" as="image" href="media/poster_02.jpg" />
+  <link rel="preload" as="image" href="media/poster_03.jpg" />
+  <link rel="preload" as="image" href="media/poster_04.jpg" />
+  <link rel="preload" as="image" href="media/poster_05.jpg" />
+  <link rel="preload" as="image" href="media/poster_06.jpg" />
+  <link rel="preload" as="image" href="media/poster_07.jpg" />
+  <link rel="preload" as="image" href="media/poster_08.jpg" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    :root {
+      --bg: #000000;
+      --text: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --ease-enter: cubic-bezier(0.25, 1, 0.5, 1);
+      --ease-smooth: cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Main Stage / Viewport */
+    .viewport {
+      position: absolute;
+      inset: 0;
+      perspective: 1400px;
+      perspective-origin: center center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .viewport:active {
+      cursor: grabbing;
+    }
+
+    /* Stack Container for 3D Card Animation */
+    .cards-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .card-item {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      transform-origin: center center;
+      will-change: transform, opacity;
+      opacity: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform: translateZ(0);
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform: translateZ(0);
+    }
+
+    .card-media {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform-origin: center center;
+      will-change: transform;
+      transform: scale(1.0);
+    }
+
+    /* Subtle Dark Vignette & Bottom Gradient for readability */
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%),
+                  linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0,0,0,0.2) 30%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Bottom Project List Dock (Kept exactly as functional element) */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      padding: 2.2rem 2.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .project-dock {
+      pointer-events: auto;
+      max-width: 90vw;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.65rem 0.5rem;
+      text-align: center;
+    }
+
+    .project-pill {
+      display: inline-flex;
+      align-items: center;
+      background: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      transition: color 0.4s var(--ease-enter), transform 0.4s var(--ease-enter);
+      overflow: hidden;
+      padding: 0.2rem 0.35rem;
+      white-space: nowrap;
+    }
+
+    .project-pill:hover {
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .project-pill.active {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .project-pill .split-text {
+      display: inline-block;
+      transform: translateY(115%);
+      opacity: 0;
+      transition: transform 0.85s var(--ease-enter), opacity 0.85s var(--ease-enter);
+    }
+
+    .divider {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 0.95rem;
+      transform: scale(0);
+      opacity: 0;
+      transition: transform 0.6s var(--ease-enter), opacity 0.6s var(--ease-enter);
+    }
+
+    .is-ready .project-pill .split-text {
+      transform: translateY(0%);
+      opacity: 1;
+    }
+
+    .is-ready .divider {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      footer { padding: 1.2rem; }
+      .project-pill { font-size: 0.8rem; }
+      .divider { font-size: 0.8rem; }
+    }
+
+    /* Minimal Top Floating Sound Toggle (Icon-only) */
+    .sound-toggle {
+      position: fixed;
+      top: 2rem;
+      right: 2.5rem;
+      z-index: 60;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background 0.3s var(--ease-enter), border-color 0.3s var(--ease-enter), transform 0.3s var(--ease-enter), color 0.3s var(--ease-enter);
+      outline: none;
+    }
+
+    .sound-toggle:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.06);
+    }
+
+    .sound-toggle.active {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .sound-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      transition: transform 0.2s ease;
+    }
+
+    .sound-toggle .sound-icon-on {
+      display: none;
+    }
+
+    .sound-toggle .sound-icon-off {
+      display: block;
+    }
+
+    .sound-toggle.active .sound-icon-on {
+      display: block;
+    }
+
+    .sound-toggle.active .sound-icon-off {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .sound-toggle {
+        top: 1.5rem;
+        right: 1.5rem;
+        width: 40px;
+        height: 40px;
+      }
+      .sound-toggle svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Interactive 3D Card Stage -->
+  <main class="viewport" id="viewport">
+    <div class="cards-container" id="cardsContainer">
+      <!-- Cards dynamically injected -->
+    </div>
+  </main>
+
+  <!-- Bottom Project Switcher Bar (Only UI element) -->
+  <footer>
+    <div class="project-dock" id="projectDock">
+      <!-- Project links dynamically injected -->
+    </div>
+  </footer>
+
+  <!-- Sound Toggle Control (Minimal Icon Only) -->
+  <button class="sound-toggle" id="soundToggle" aria-label="Toggle Sound" title="Toggle Sound (M)">
+    <svg class="sound-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <line x1="23" y1="9" x2="17" y2="15"></line>
+      <line x1="17" y1="9" x2="23" y2="15"></line>
+    </svg>
+    <svg class="sound-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+    </svg>
+  </button>
+
+  <script>
+    // F1 Top Highlights (2018 - 2025)
+    const PROJECTS = [
+      {
+        id: "2024-hamilton",
+        year: "2024",
+        driver: "HAMILTON",
+        label: "2024 HAMILTON",
+        video: "media/video_01.mp4",
+        poster: "media/poster_01.jpg"
+      },
+      {
+        id: "2024-verstappen",
+        year: "2024",
+        driver: "VERSTAPPEN",
+        label: "2024 VERSTAPPEN",
+        video: "media/video_02.mp4",
+        poster: "media/poster_02.jpg"
+      },
+      {
+        id: "2023-sainz",
+        year: "2023",
+        driver: "SAINZ",
+        label: "2023 SAINZ",
+        video: "media/video_03.mp4",
+        poster: "media/poster_03.jpg"
+      },
+      {
+        id: "2022-battle",
+        year: "2022",
+        driver: "BATTLE",
+        label: "2022 BATTLE",
+        video: "media/video_04.mp4",
+        poster: "media/poster_04.jpg"
+      },
+      {
+        id: "2021-decider",
+        year: "2021",
+        driver: "DECIDER",
+        label: "2021 DECIDER",
+        video: "media/video_05.mp4",
+        poster: "media/poster_05.jpg"
+      },
+      {
+        id: "2020-miracle",
+        year: "2020",
+        driver: "MIRACLE",
+        label: "2020 MIRACLE",
+        video: "media/video_06.mp4",
+        poster: "media/poster_06.jpg"
+      },
+      {
+        id: "2019-leclerc",
+        year: "2019",
+        driver: "LECLERC",
+        label: "2019 LECLERC",
+        video: "media/video_07.mp4",
+        poster: "media/poster_07.jpg"
+      },
+      {
+        id: "2018-ricciardo",
+        year: "2018",
+        driver: "RICCIARDO",
+        label: "2018 RICCIARDO",
+        video: "media/video_08.mp4",
+        poster: "media/poster_08.jpg"
+      }
+    ];
+
+    let currentIndex = 0;
+    let isIntroPlaying = true;
+    let introRafId = null;
+
+    const cardsContainer = document.getElementById("cardsContainer");
+    const projectDock = document.getElementById("projectDock");
+    const cardElements = [];
+    const dockButtons = [];
+
+    // 1. Build DOM Elements
+    function buildElements() {
+      cardsContainer.innerHTML = "";
+      projectDock.innerHTML = "";
+      cardElements.length = 0;
+      dockButtons.length = 0;
+
+      PROJECTS.forEach((proj, idx) => {
+        // Create Card with embedded authentic video
+        const card = document.createElement("div");
+        card.className = "card-item";
+        card.dataset.index = idx;
+        card.style.zIndex = (PROJECTS.length - idx) * 10;
+        card.innerHTML = `
+          <div class="card-inner">
+            <video class="card-media" src="${proj.video}" poster="${proj.poster}" muted playsinline loop preload="metadata"></video>
+            <div class="card-overlay"></div>
+          </div>
+        `;
+
+        // Clicking active card toggles sound; clicking neighbor navigates
+        card.addEventListener("click", () => {
+          if (isIntroPlaying) return;
+          const diff = getCircularOffset(idx, currentIndex, PROJECTS.length);
+          if (diff === 0) {
+            toggleSound();
+          } else {
+            selectProject(idx);
+          }
+        });
+
+        cardsContainer.appendChild(card);
+        cardElements.push(card);
+
+        // Create Dock Item (Style B: Ultra-minimal)
+        const btn = document.createElement("button");
+        btn.className = `project-pill ${idx === currentIndex ? "active" : ""}`;
+        btn.dataset.index = idx;
+        btn.innerHTML = `<span class="split-text">${proj.label}</span>`;
+        btn.addEventListener("click", () => selectProject(idx));
+        projectDock.appendChild(btn);
+        dockButtons.push(btn);
+
+        // Add Divider
+        if (idx < PROJECTS.length - 1) {
+          const div = document.createElement("span");
+          div.className = "divider";
+          div.textContent = " / ";
+          projectDock.appendChild(div);
+        }
+      });
+    }
+
+    // Sound toggle state & UI
+    let isMuted = true;
+
+    function updateSoundUI() {
+      const btn = document.getElementById("soundToggle");
+      if (!btn) return;
+      if (isMuted) {
+        btn.classList.remove("active");
+        btn.setAttribute("aria-label", "Turn sound on (M)");
+        btn.setAttribute("title", "Sound Off (Press M to toggle)");
+      } else {
+        btn.classList.add("active");
+        btn.setAttribute("aria-label", "Turn sound off (M)");
+        btn.setAttribute("title", "Sound On (Press M to toggle)");
+      }
+    }
+
+    function toggleSound() {
+      isMuted = !isMuted;
+      updateSoundUI();
+      cardElements.forEach((card) => {
+        const vid = card.querySelector("video.card-media");
+        if (vid) vid.muted = isMuted;
+      });
+      const activeCard = cardElements[currentIndex];
+      if (activeCard) {
+        const vid = activeCard.querySelector("video.card-media");
+        if (vid && !isIntroPlaying) {
+          vid.muted = isMuted;
+          vid.play().catch(() => {});
+        }
+      }
+    }
+
+    const soundToggleBtn = document.getElementById("soundToggle");
+    if (soundToggleBtn) {
+      soundToggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleSound();
+      });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "m" || e.key === "M") toggleSound();
+    });
+
+    // Preload & decode all poster images to eliminate paint hitches and layout shifts
+    function preloadImages() {
+      const loadPromises = PROJECTS.map(proj => {
+        return new Promise(resolve => {
+          const img = new Image();
+          img.src = proj.poster;
+          if (img.complete) {
+            if (img.decode) img.decode().then(resolve).catch(resolve);
+            else resolve();
+          } else {
+            img.onload = () => {
+              if (img.decode) img.decode().then(resolve).catch(resolve);
+              else resolve();
+            };
+            img.onerror = resolve;
+          }
+        });
+      });
+      // Cap preload wait to at most 800ms so animation never stalls
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
+      return Promise.race([Promise.all(loadPromises), timeoutPromise]);
+    }
+
+    // Exact Bezier Easings
+    const EASE_ENTER = "cubic-bezier(0.25, 1, 0.5, 1)";
+    const EASE_SMOOTH = "cubic-bezier(0.77, 0, 0.175, 1)";
+
+    // Mathematical easing functions for single-timeline RAF coordination
+    function smootherstep(t) {
+      return t <= 0 ? 0 : t >= 1 ? 1 : t * t * t * (t * (t * 6 - 15) + 10);
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    // Stack Pile Geometry: Each card i (0: front, 7: back) has exact stable offsets
+    const STACK_CONFIG = [
+      { y: 0,    z: 0,    scale: 0.35,  brightness: 1.0 },
+      { y: -20,  z: -32,  scale: 0.338, brightness: 0.94 },
+      { y: -40,  z: -64,  scale: 0.326, brightness: 0.88 },
+      { y: -60,  z: -96,  scale: 0.314, brightness: 0.82 },
+      { y: -80,  z: -128, scale: 0.302, brightness: 0.76 },
+      { y: -100, z: -160, scale: 0.290, brightness: 0.70 },
+      { y: -120, z: -192, scale: 0.278, brightness: 0.64 },
+      { y: -140, z: -224, scale: 0.266, brightness: 0.58 }
+    ];
+
+    // Helper for circular carousel offsets
+    function getCircularOffset(i, current, count) {
+      let diff = (i - current) % count;
+      if (diff > count / 2) diff -= count;
+      if (diff < -count / 2) diff += count;
+      return diff;
+    }
+
+    // Horizontal Row Map: Relative order around index 0
+    const HORIZONTAL_SLOTS = [0, 1, 2, 3, 4, -3, -2, -1];
+
+    // Synchronize video playback with the active hero card
+    function syncVideoPlayback() {
+      cardElements.forEach((card, i) => {
+        const vid = card.querySelector("video.card-media");
+        if (!vid) return;
+        const diff = getCircularOffset(i, currentIndex, PROJECTS.length);
+        if (diff === 0 && !isIntroPlaying) {
+          vid.preload = "auto";
+          vid.muted = isMuted;
+          vid.play().catch(() => {});
+        } else if (Math.abs(diff) === 1) {
+          vid.preload = "auto";
+          vid.pause();
+          vid.currentTime = 0;
+        } else {
+          vid.preload = "metadata";
+          vid.pause();
+          vid.currentTime = 0;
+        }
+      });
+    }
+
+    // Unified Master Animation Sequence
+    async function playIntroSequence() {
+      if (introRafId) cancelAnimationFrame(introRafId);
+      isIntroPlaying = true;
+      document.body.classList.remove("is-ready");
+
+      // Pause any active videos during intro 3D sequence
+      cardElements.forEach(card => {
+        const vid = card.querySelector("video.card-media");
+        if (vid) vid.pause();
+      });
+
+      // Wait for image decoding
+      await preloadImages();
+
+      // Clear any inline transitions so RAF loop has exclusive authority
+      cardElements.forEach((card, i) => {
+        card.style.transition = "none";
+        card.style.zIndex = (PROJECTS.length - i) * 10;
+        card.style.opacity = "0";
+      });
+
+      const startTime = performance.now();
+
+      // Seamless Timeline Schedule (ms):
+      // - Stacking Phase (Phase A & B): 0 -> 1580ms (Smooth quintic flight into 3D pile)
+      // - Brief Natural Rest: 1580ms -> 1780ms (Physical pile registered)
+      // - Fluid Fan-Out (Phase C): 1780ms -> 2580ms (Cards fan out into mini row)
+      // - Hero Expansion (Phase D): 2580ms -> 3500ms (Active card expands to full viewport)
+      // - Interactive Settle: 3500ms+ (Handoff to CSS transitions & video autoplay)
+      const T_STACK_DONE = 1580;
+      const T_HOLD_DONE = 1780;
+      const T_UNFOLD_DONE = 2580;
+      const T_EXPAND_DONE = 3500;
+
+      const staggerDuration = 540;
+      const staggerDelay = 130;
+
+      function frame(now) {
+        const elapsed = now - startTime;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const miniSpacing = Math.min(winW * 0.38, 420);
+
+        if (elapsed < T_HOLD_DONE) {
+          // --- Phase A & B: Unified Stacking ---
+          cardElements.forEach((card, i) => {
+            const conf = STACK_CONFIG[i];
+            // Order of arrival: back to front (card 7 arrives first, card 0 arrives last)
+            const cardArrivalOrder = (PROJECTS.length - 1 - i);
+            const cardStart = cardArrivalOrder * staggerDelay;
+            const cardProgress = Math.max(0, Math.min(1, (elapsed - cardStart) / staggerDuration));
+
+            if (cardProgress <= 0) {
+              card.style.opacity = "0";
+              card.style.transform = `translate3d(0, ${(conf.y + winH * 0.65).toFixed(2)}px, 100px) rotateX(-20deg) scale(0.68)`;
+            } else if (cardProgress < 1) {
+              const ease = smootherstep(cardProgress);
+              const curY = (conf.y + winH * 0.65) * (1 - ease) + conf.y * ease;
+              const curZ = 100 * (1 - ease) + conf.z * ease;
+              const curRotX = -20 * (1 - ease);
+              const curScale = 0.68 * (1 - ease) + conf.scale * ease;
+              const curOpacity = Math.min(1, cardProgress * 3.0);
+
+              card.style.opacity = curOpacity.toFixed(3);
+              card.style.transform = `translate3d(0, ${curY.toFixed(2)}px, ${curZ.toFixed(2)}px) rotateX(${curRotX.toFixed(2)}deg) scale(${curScale.toFixed(4)})`;
+            } else {
+              // Firmly resting in the stack
+              card.style.opacity = "1";
+              card.style.transform = `translate3d(0, ${conf.y}px, ${conf.z}px) rotateX(0deg) scale(${conf.scale})`;
+            }
+          });
+        } else if (elapsed < T_UNFOLD_DONE) {
+          // --- Phase C: Transition from Stack into Horizontal Arrangement ---
+          const unfoldProgress = (elapsed - T_HOLD_DONE) / (T_UNFOLD_DONE - T_HOLD_DONE);
+          const ease = smootherstep(unfoldProgress);
+
+          cardElements.forEach((card, i) => {
+            const conf = STACK_CONFIG[i];
+            const targetX = HORIZONTAL_SLOTS[i] * miniSpacing;
+
+            const curX = targetX * ease;
+            const curY = conf.y * (1 - ease);
+            const curZ = conf.z * (1 - ease);
+            const curScale = conf.scale * (1 - ease) + 0.35 * ease;
+
+            card.style.opacity = "1";
+            card.style.transform = `translate3d(${curX.toFixed(2)}px, ${curY.toFixed(2)}px, ${curZ.toFixed(2)}px) rotateX(0deg) scale(${curScale.toFixed(4)})`;
+          });
+        } else if (elapsed < T_EXPAND_DONE) {
+          // --- Phase D: Smooth Expansion of Hero Card & Horizontal Settle ---
+          const expandProgress = (elapsed - T_UNFOLD_DONE) / (T_EXPAND_DONE - T_UNFOLD_DONE);
+          const ease = smootherstep(expandProgress);
+
+          if (expandProgress > 0.45 && !document.body.classList.contains("is-ready")) {
+            document.body.classList.add("is-ready");
+          }
+
+          cardElements.forEach((card, i) => {
+            const startX = HORIZONTAL_SLOTS[i] * miniSpacing;
+            const finalOffsetFactor = HORIZONTAL_SLOTS[i];
+            const targetX = finalOffsetFactor * winW;
+
+            const curX = startX * (1 - ease) + targetX * ease;
+            const curScale = 0.35 * (1 - ease) + 1.0 * ease;
+
+            card.style.opacity = "1";
+            card.style.transform = `translate3d(${curX.toFixed(2)}px, 0px, 0px) scale(${curScale.toFixed(4)})`;
+          });
+        } else {
+          // --- Settle & Interactive Handoff ---
+          document.body.classList.add("is-ready");
+          isIntroPlaying = false;
+
+          cardElements.forEach((card, i) => {
+            const media = card.querySelector(".card-media");
+            const diff = getCircularOffset(i, currentIndex, PROJECTS.length);
+            const isActive = (diff === 0);
+            const isNeighbor = Math.abs(diff) === 1;
+
+            card.style.zIndex = isActive ? 10 : (isNeighbor ? 2 : 1);
+            card.style.opacity = (isActive || isNeighbor) ? "1" : "0";
+            card.style.transform = `translate3d(${diff * 100}%, 0, 0) scale(1)`;
+            if (media) media.style.transform = isActive ? "scale(1)" : "scale(1.15)";
+
+            // Enable CSS transitions for seamless click/drag/scroll interaction
+            card.style.transition = `transform 0.9s ${EASE_SMOOTH}, opacity 0.8s ease`;
+            if (media) media.style.transition = `transform 1.2s ${EASE_ENTER}`;
+          });
+
+          // Begin playing active card's video
+          syncVideoPlayback();
+
+          return; // Animation loop finishes
+        }
+
+        introRafId = requestAnimationFrame(frame);
+      }
+
+      introRafId = requestAnimationFrame(frame);
+    }
+
+    // 2. Project Selection & Carousel Transitions (Interactive Mode)
+    function selectProject(nextIndex) {
+      if (isIntroPlaying || nextIndex === currentIndex) return;
+
+      currentIndex = nextIndex;
+
+      // Update Dock Buttons
+      dockButtons.forEach((btn, i) => {
+        btn.classList.toggle("active", i === currentIndex);
+      });
+
+      // Animate Cards seamlessly in horizontal carousel
+      cardElements.forEach((card, i) => {
+        const media = card.querySelector(".card-media");
+        const diff = getCircularOffset(i, currentIndex, PROJECTS.length);
+        const isActive = (diff === 0);
+        const isNeighbor = Math.abs(diff) === 1;
+
+        if (isActive) {
+          card.style.zIndex = 10;
+          card.style.opacity = "1";
+          card.style.transition = `transform 0.9s ${EASE_SMOOTH}, opacity 0.8s ease`;
+          card.style.transform = `translate3d(0, 0, 0) scale(1)`;
+          if (media) {
+            media.style.transition = `transform 1.2s ${EASE_ENTER}`;
+            media.style.transform = "scale(1)";
+          }
+        } else if (isNeighbor) {
+          card.style.zIndex = 2;
+          card.style.opacity = "1";
+          card.style.transition = `transform 0.9s ${EASE_SMOOTH}, opacity 0.8s ease`;
+          card.style.transform = `translate3d(${diff * 100}%, 0, 0) scale(1)`;
+          if (media) {
+            media.style.transition = `transform 1.2s ${EASE_ENTER}`;
+            media.style.transform = "scale(1.15)";
+          }
+        } else {
+          card.style.zIndex = 1;
+          card.style.opacity = "0";
+          card.style.transition = "none";
+          card.style.transform = `translate3d(${diff * 100}%, 0, 0) scale(1)`;
+          if (media) media.style.transform = "scale(1.15)";
+        }
+      });
+
+      syncVideoPlayback();
+    }
+
+    function nextProject() {
+      selectProject((currentIndex + 1) % PROJECTS.length);
+    }
+
+    function prevProject() {
+      selectProject((currentIndex - 1 + PROJECTS.length) % PROJECTS.length);
+    }
+
+    // Wheel Scroll Direction Handler
+    // - Scroll UP (deltaY < 0): Move card composition towards the RIGHT (prevProject)
+    // - Scroll DOWN (deltaY > 0): Move card composition towards the LEFT (nextProject)
+    // Strictly locks during transition and momentum so 1 scroll gesture moves exactly 1 frame
+    let wheelAcc = 0;
+    let isWheelLocked = false;
+    let wheelEndTimer = null;
+    let lastWheelActionTime = 0;
+    const WHEEL_THRESHOLD = 45;
+    const MIN_COOLDOWN_MS = 600;
+    const WHEEL_IDLE_MS = 140;
+
+    window.addEventListener("wheel", (e) => {
+      if (isIntroPlaying) return;
+      e.preventDefault();
+
+      const now = performance.now();
+
+      // Always reset the idle timer on every wheel event
+      clearTimeout(wheelEndTimer);
+      wheelEndTimer = setTimeout(() => {
+        // When wheel events stop for at least 140ms AND minimum cooldown elapsed: unlock!
+        const elapsed = performance.now() - lastWheelActionTime;
+        if (elapsed >= MIN_COOLDOWN_MS) {
+          isWheelLocked = false;
+          wheelAcc = 0;
+        } else {
+          // If idle finished before 600ms cooldown, wait the remainder
+          const waitRemaining = MIN_COOLDOWN_MS - elapsed;
+          wheelEndTimer = setTimeout(() => {
+            isWheelLocked = false;
+            wheelAcc = 0;
+          }, waitRemaining);
+        }
+      }, WHEEL_IDLE_MS);
+
+      // If locked or still within animation cooldown, absorb all events
+      if (isWheelLocked || (now - lastWheelActionTime < MIN_COOLDOWN_MS)) {
+        wheelAcc = 0;
+        return;
+      }
+
+      wheelAcc += e.deltaY;
+
+      if (wheelAcc >= WHEEL_THRESHOLD) {
+        // Scroll DOWN: Move composition towards LEFT
+        wheelAcc = 0;
+        isWheelLocked = true;
+        lastWheelActionTime = performance.now();
+        nextProject();
+      } else if (wheelAcc <= -WHEEL_THRESHOLD) {
+        // Scroll UP: Move composition towards RIGHT
+        wheelAcc = 0;
+        isWheelLocked = true;
+        lastWheelActionTime = performance.now();
+        prevProject();
+      }
+    }, { passive: false });
+
+    // Keyboard Navigation
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") nextProject();
+      if (e.key === "ArrowLeft") prevProject();
+    });
+
+    // Touch and Mouse Drag Support
+    let startX = 0;
+    let isDragging = false;
+    const viewport = document.getElementById("viewport");
+
+    viewport.addEventListener("mousedown", (e) => {
+      if (isIntroPlaying) return;
+      isDragging = true;
+      startX = e.clientX;
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const diff = e.clientX - startX;
+      if (diff < -50) nextProject();
+      else if (diff > 50) prevProject();
+    });
+
+    viewport.addEventListener("touchstart", (e) => {
+      if (isIntroPlaying) return;
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    viewport.addEventListener("touchend", (e) => {
+      if (isIntroPlaying) return;
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff < -50) nextProject();
+      else if (diff > 50) prevProject();
+    });
+
+    // Expose for external calls/testing
+    window.playIntroSequence = playIntroSequence;
+    window.selectProject = selectProject;
+    window.getCurrentIndex = () => currentIndex;
+
+    // Initialize & Start Intro on Load
+    buildElements();
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", () => playIntroSequence());
+    } else {
+      playIntroSequence();
+    }
+  </script>
+</body>
+</html>
